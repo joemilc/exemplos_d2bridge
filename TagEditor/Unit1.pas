@@ -26,8 +26,10 @@ type
     CoreModule11: TMenuItem;
     CoreModule21: TMenuItem;
     Button1: TButton;
+    Button2: TButton;
     procedure Module11Click(Sender: TObject);
     procedure Button1Click(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
   private
     function BuildTagEditorHTML: string;
   public
@@ -121,6 +123,14 @@ begin
     ShowMessage('Tags recebidas: ' + Resultado);
 end;
 
+procedure TForm1.Button2Click(Sender: TObject);
+begin
+  Session.ExecJS(
+    'document.querySelectorAll(".tag").forEach(t => t.remove());' +
+    'document.getElementById("tagInput").value = "";'
+  );
+end;
+
 procedure TForm1.ExportD2Bridge;
 begin
   inherited;
@@ -139,10 +149,11 @@ begin
     VCLObj(Label1);
     VCLObj(Label2);
     VCLObj(Label3);
-    VCLObj(Button1, CSSClass.Button.save);
     // Adiciona o componente HTML do editor de tags
     with Row.Items.Add do
       HTMLElement(BuildTagEditorHTML);
+    VCLObj(Button1, CSSClass.Button.save);
+    VCLObj(Button2, CSSClass.Button.clean);
   end;
 end;
 

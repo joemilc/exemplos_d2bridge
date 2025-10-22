@@ -47,13 +47,22 @@ object Form1: TForm1
     Caption = 'by Joemil Cassio'
   end
   object Button1: TButton
-    Left = 48
-    Top = 120
+    Left = 8
+    Top = 144
     Width = 169
     Height = 41
     Caption = 'Get Tags'
     TabOrder = 0
     OnClick = Button1Click
+  end
+  object Button2: TButton
+    Left = 184
+    Top = 144
+    Width = 145
+    Height = 41
+    Caption = 'Limpar Tags'
+    TabOrder = 1
+    OnClick = Button2Click
   end
   object MainMenu1: TMainMenu
     Left = 232
