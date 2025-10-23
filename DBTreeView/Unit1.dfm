@@ -13,7 +13,6 @@ object Form1: TForm1
   Menu = MainMenu1
   OnClose = FormClose
   OnCreate = FormCreate
-  OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 14
   object Label1: TLabel
@@ -48,6 +47,58 @@ object Form1: TForm1
     Width = 86
     Height = 14
     Caption = 'by Joemil Cassio'
+  end
+  object Label4: TLabel
+    Left = 8
+    Top = 85
+    Width = 197
+    Height = 25
+    Caption = 'Dados Aleat'#243'rios 1'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clTeal
+    Font.Height = -21
+    Font.Name = 'Tahoma'
+    Font.Style = [fsBold]
+    ParentFont = False
+  end
+  object Label5: TLabel
+    Left = 8
+    Top = 125
+    Width = 197
+    Height = 25
+    Caption = 'Dados Aleat'#243'rios 2'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clTeal
+    Font.Height = -21
+    Font.Name = 'Tahoma'
+    Font.Style = [fsBold]
+    ParentFont = False
+  end
+  object Label6: TLabel
+    Left = 8
+    Top = 165
+    Width = 92
+    Height = 25
+    Caption = 'Usuarios'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clTeal
+    Font.Height = -21
+    Font.Name = 'Tahoma'
+    Font.Style = [fsBold]
+    ParentFont = False
+  end
+  object Label7: TLabel
+    Left = 8
+    Top = 205
+    Width = 89
+    Height = 25
+    Caption = 'Projetos'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clTeal
+    Font.Height = -21
+    Font.Name = 'Tahoma'
+    Font.Style = [fsBold]
+    ParentFont = False
   end
   object MainMenu1: TMainMenu
     Left = 176

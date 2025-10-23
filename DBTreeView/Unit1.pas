@@ -26,13 +26,15 @@ type
     CoreModules1: TMenuItem;
     CoreModule11: TMenuItem;
     CoreModule21: TMenuItem;
+    Label4: TLabel;
+    Label5: TLabel;
+    Label6: TLabel;
+    Label7: TLabel;
     procedure Module11Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
-    procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
   private
-    CDS: TClientDataset;
-    procedure ExportTreeViewToD2B(Q: TDataset);
+    CDS, CDS2, CdsUser, CdsPrj: TClientDataset;
   public
 
   protected
@@ -46,7 +48,7 @@ Function Form1: TForm1;
 implementation
 
 Uses
-  DBTreeViewWebApp;
+  DBTreeViewWebApp, System.IOUtils;
 
 Function Form1: TForm1;
 begin
@@ -58,6 +60,7 @@ end;
 { TForm1 }
 
 procedure TForm1.ExportD2Bridge;
+var s: String;
 begin
   inherited;
 
@@ -68,6 +71,11 @@ begin
   D2Bridge.FrameworkExportType.TemplateMasterHTMLFile := '';
   D2Bridge.FrameworkExportType.TemplatePageHTMLFile := '';
 
+  s := TTreeViewHTML.BuildHTMLFromDataset(CDS)+#13+
+       TTreeViewHTML.BuildHTMLFromDataset(CDS2)+#13+
+       TTreeViewHTML.BuildHTMLFromDataset(CdsUser)+#13+
+       TTreeViewHTML.BuildHTMLFromDataset(CdsPrj);
+  TFile.WriteAllText('d:\tree.html', s);
   // Export yours Controls
   with D2Bridge.Items.add do
   begin
@@ -75,32 +83,35 @@ begin
     VCLObj(Label1);
     VCLObj(Label2);
     VCLObj(Label3);
+    VCLObj(Label4);
     with Row.Items.add do
       HTMLElement(TTreeViewHTML.BuildHTMLFromDataset(CDS));
+    VCLObj(Label5);
+    with Row.Items.add do
+      HTMLElement(TTreeViewHTML.BuildHTMLFromDataset(CDS2));
+    VCLObj(Label6);
+    with Row.Items.add do
+      HTMLElement(TTreeViewHTML.BuildHTMLFromDataset(CdsUser));
+    VCLObj(Label7);
+    with Row.Items.add do
+      HTMLElement(TTreeViewHTML.BuildHTMLFromDataset(CdsPrj));
   end;
-end;
-
-procedure TForm1.ExportTreeViewToD2B(Q: TDataset);
-var
-  HTML: string;
-begin
-  HTML := TTreeViewHTML.BuildHTMLFromDataset(CDS);
-  Session.ExecJS('document.getElementById("treeview").innerHTML = `' + HTML + '`;');
 end;
 
 procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   CDS.Free;
+  CDS2.Free;
+  CdsUser.Free;
+  CdsPrj.Free;
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  CDS := TTreeViewHTML.CreateDemoDataset;
-end;
-
-procedure TForm1.FormShow(Sender: TObject);
-begin
-  //ExportTreeViewToD2B(CDS);
+  CDS  := TTreeViewHTML.CreateDemoDataset;
+  CDS2 := TTreeViewHTML.CreateDemoDataset2;
+  CdsUser := TTreeViewHTML.CreateUserTreeDataset;
+  CdsPrj  := TTreeViewHTML.CreateProjectDataset;
 end;
 
 procedure TForm1.InitControlsD2Bridge(const PrismControl: TPrismControl);
