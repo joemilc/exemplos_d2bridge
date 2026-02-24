@@ -44,7 +44,7 @@ begin
 
   ADataSet.EmptyDataSet;
 
-  Supabase := TSupabase.New;
+  Supabase := TSupabase.Create;
   try
     JsonStr := Supabase.Receber('cadastros', '*', '', 'id', 100, 0);
 
@@ -80,6 +80,8 @@ begin
         JsonValue.Free;
     end;
   except
+    on E: ESupabaseError do
+      ShowMessage('Erro de Conexão Supabase: ' + E.Message);
     on E: Exception do
       ShowMessage('Erro ao carregar dados: ' + E.Message);
   end;

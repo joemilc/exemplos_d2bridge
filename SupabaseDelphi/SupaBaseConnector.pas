@@ -2,10 +2,10 @@ unit SupaBaseConnector;
 
 interface
 
-uses System.SysUtils,
-  CriaRESTClient;
+uses System.SysUtils, System.JSON, Supabase.Client;
 
 type
+  ESupabaseError = class(Exception);
 
   ISupabase = interface
     ['{06F118C0-1919-4D6C-A090-F91B7428D672}']
@@ -13,101 +13,175 @@ type
     function Enviar(Tabela, JsonBody: String): Boolean;
     function Atualizar(Tabela, Id, JsonBody: String): Boolean;
     function Deletar(Tabela, Id: String): Boolean;
+    function TestarConexao: Boolean;
   end;
 
   TSupabase = class(TInterfacedObject, ISupabase)
   private
-    FRestClient: ICriaRESTClient;
-    procedure Autenticar;
+    FClient: ISupabaseRequest;
+    procedure VerificarErro(const AResponse: String; StatusCode: Integer);
   public
+    constructor Create;
     function Receber(Tabela, Campos, Filtros, Ordenacao: String; Limite, Offset: Integer): String;
     function Enviar(Tabela, JsonBody: String): Boolean;
     function Atualizar(Tabela, Id, JsonBody: String): Boolean;
     function Deletar(Tabela, Id: String): Boolean;
-
-    constructor Create;
-    destructor Destroy; override;
-    class function New: ISupabase;
+    function TestarConexao: Boolean;
   end;
 
 const
-  BASE_URL = 'https://oyfmzmochxxxhgnlaera.supabase.co';
-  API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95Zm16bW9jaHh4eGhnbmxhZXJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwNzgyOTIsImV4cCI6MjA4MTY1NDI5Mn0.lD84g0ShkOgDwVITzaqMa4pZhjRBfk-hhJJXfYT8reU';
+  BASE_URL = 'https://imjbnmucxwjnyzbohsya.supabase.co';
+  API_KEY = 'sb_publishable_qmYRSNrJrQRNdbS1W6cBMw_g9J2K5Dc';
 
 implementation
 
 constructor TSupabase.Create;
 begin
-  FRestClient := TCriaRESTClient.New;
-  Autenticar;
+  FClient := TSupabaseClient.New(BASE_URL, API_KEY);
 end;
 
-procedure TSupabase.Autenticar;
+procedure TSupabase.VerificarErro(const AResponse: String; StatusCode: Integer);
+var
+  JsonObj: TJSONObject;
+  ErrorMsg: String;
 begin
-  FRestClient
-    .SetURL(BASE_URL)
-    .AddHeader('apikey', API_KEY)
-    .AddHeader('Authorization', 'Bearer ' + API_KEY)
-    .AddHeader('Content-Type', 'application/json');
+  if (StatusCode >= 400) then
+  begin
+    ErrorMsg := 'Erro na requisição (Status: ' + IntToStr(StatusCode) + ')';
+    
+    if AResponse <> '' then
+    begin
+      try
+        JsonObj := TJSONObject.ParseJSONValue(AResponse) as TJSONObject;
+        if Assigned(JsonObj) then
+        try
+          if JsonObj.GetValue('error') <> nil then
+             ErrorMsg := ErrorMsg + ': ' + JsonObj.GetValue<String>('error')
+          else if JsonObj.GetValue('message') <> nil then
+             ErrorMsg := ErrorMsg + ': ' + JsonObj.GetValue<String>('message');
+        finally
+          JsonObj.Free;
+        end;
+      except
+        // Se falhar o parse, mantemos a mensagem genérica ou o raw response se curto
+      end;
+    end;
+    
+    raise ESupabaseError.Create(ErrorMsg);
+  end;
 end;
 
 function TSupabase.Receber(Tabela, Campos, Filtros, Ordenacao: String; Limite, Offset: Integer): String;
+var
+  J: TJSONArray;
+  Field, Dir: String;
 begin
-  FRestClient
-    .SetRota(Tabela)
-    .AddParams('select', Campos);  // Define os campos a serem retornados
+  FClient.Table(Tabela).Select(Campos);
 
   if Filtros <> '' then
-    FRestClient.AddParams('filters', Filtros);
+    FClient.Filter(Filtros);
 
   if Ordenacao <> '' then
-    FRestClient.AddParams('order', Ordenacao);
+  begin
+    // Simple parsing for "field.desc" or just "field"
+    if Pos('.', Ordenacao) > 0 then
+    begin
+       Field := Copy(Ordenacao, 1, Pos('.', Ordenacao) - 1);
+       Dir := Copy(Ordenacao, Pos('.', Ordenacao) + 1, Length(Ordenacao));
+       FClient.Order(Field, LowerCase(Dir) <> 'desc');
+    end
+    else
+       FClient.Order(Ordenacao, True);
+  end;
 
   if Limite > 0 then
-    FRestClient.AddParams('limit', IntToStr(Limite));
+    FClient.Limit(Limite);
 
   if Offset >= 0 then
-    FRestClient.AddParams('offset', IntToStr(Offset));
+    FClient.Offset(Offset);
 
-  FRestClient.Get;
-  Result := FRestClient.GetJsonRetorno;
+  try
+    J := FClient.Execute;
+    if Assigned(J) then
+    begin
+      Result := J.ToString;
+      J.Free;
+    end
+    else
+      Result := '[]';
+  except
+    on E: Exception do
+    begin
+       if E.Message.StartsWith('Erro na requisição Supabase') then
+         raise ESupabaseError.Create(E.Message)
+       else
+         raise;
+    end;
+  end;
 end;
 
 function TSupabase.Enviar(Tabela, JsonBody: String): Boolean;
+var
+  J: TJSONArray;
 begin
-  FRestClient
-    .SetRota(Tabela)
-    .AddBody(JsonBody)
-    .Post;
-  Result := FRestClient.GetStatusCode = 201;
-end;
-
-class function TSupabase.New: ISupabase;
-begin
-  Result := Self.Create;
+  try
+    J := FClient
+      .Table(Tabela)
+      .Insert(JsonBody)
+      .Execute;
+    Result := True;
+    if Assigned(J) then J.Free;
+  except
+    Result := False;
+    raise; 
+  end;
 end;
 
 function TSupabase.Atualizar(Tabela, Id, JsonBody: String): Boolean;
+var
+  J: TJSONArray;
 begin
-  FRestClient
-    .SetRota(Tabela + '?id=eq.' + Id)
-    .AddBody(JsonBody)
-    .Patch;
-  Result := FRestClient.GetStatusCode = 200;
+  try
+    J := FClient
+      .Table(Tabela)
+      .Update(JsonBody)
+      .Eq('id', Id) // Assuming Id is for 'id' column
+      .Execute;
+    Result := True;
+    if Assigned(J) then J.Free;
+  except
+    Result := False;
+    raise;
+  end;
 end;
 
 function TSupabase.Deletar(Tabela, Id: String): Boolean;
+var
+  J: TJSONArray;
 begin
-  FRestClient
-    .SetRota(Tabela + '?id=eq.' + Id)
-    .Delete;
-  Result := FRestClient.GetStatusCode = 204;
+  try
+    J := FClient
+      .Table(Tabela)
+      .Delete
+      .Eq('id', Id)
+      .Execute;
+    Result := True;
+    if Assigned(J) then J.Free;
+  except
+    Result := False;
+    raise;
+  end;
 end;
 
-destructor TSupabase.Destroy;
+function TSupabase.TestarConexao: Boolean;
 begin
-
-  inherited;
+  try
+    // Tenta buscar 1 registro da tabela 'cadastros'
+    Receber('cadastros', 'id', '', '', 1, 0);
+    Result := True;
+  except
+    Result := False;
+  end;
 end;
 
 end.

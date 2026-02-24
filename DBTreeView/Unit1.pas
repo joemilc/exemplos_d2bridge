@@ -75,7 +75,7 @@ begin
        TTreeViewHTML.BuildHTMLFromDataset(CDS2)+#13+
        TTreeViewHTML.BuildHTMLFromDataset(CdsUser)+#13+
        TTreeViewHTML.BuildHTMLFromDataset(CdsPrj);
-  TFile.WriteAllText('d:\tree.html', s);
+  //TFile.WriteAllText('d:\tree.html', s);
   // Export yours Controls
   with D2Bridge.Items.add do
   begin
